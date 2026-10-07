@@ -1,0 +1,37 @@
+#pocket-pi-files {
+  box-sizing: border-box;
+  width: min(36rem, calc(100vw - 2rem));
+  max-height: 85vh;
+  overflow: auto;
+  padding: 1rem;
+  margin: auto;
+  border: 1px solid var(--border-primary, #555);
+  border-radius: .75rem;
+  background: var(--bg-primary, #202124);
+  color: var(--text-primary, #eee);
+  font: 14px/1.5 system-ui, sans-serif;
+}
+#pocket-pi-files::backdrop { background: #0009; }
+#pocket-pi-files h2 { margin: 0 0 .75rem; font-size: 1.25rem; }
+#pocket-pi-files select { display: block; width: 100%; color: inherit; background: inherit; }
+#pocket-pi-files button, #pocket-pi-files select {
+  padding: .5rem;
+  border: 1px solid var(--border-primary, #777);
+  border-radius: .25rem;
+  cursor: pointer;
+}
+#pocket-pi-files button:disabled, #pocket-pi-files select:disabled { opacity: .5; cursor: default; }
+#pocket-pi-files .file-actions { display: flex; gap: .5rem; }
+#pocket-pi-files p { margin: .5rem 0; overflow-wrap: anywhere; }
+#pocket-pi-files [data-limit] { font-size: .8rem; }
+#pocket-pi-files ul { list-style: none; margin: .75rem 0; padding: 0; }
+#pocket-pi-files li > * {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: .6rem;
+  text-align: start;
+  overflow-wrap: anywhere;
+  color: var(--accent-blue, #8ab4f8);
+}
+#pocket-pi-files li button { border: none; background: transparent; }

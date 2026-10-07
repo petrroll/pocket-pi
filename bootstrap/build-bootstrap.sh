@@ -44,7 +44,11 @@ cp "$HERE/postinstall.sh"   "$WORK/prefix/etc/pocket-pi/postinstall.sh"
 cp "$HERE/packages.txt"     "$WORK/prefix/etc/pocket-pi/packages.txt"
 cp "$HERE/npm-packages.txt" "$WORK/prefix/etc/pocket-pi/npm-packages.txt"
 cp "$HERE/pip-packages.txt" "$WORK/prefix/etc/pocket-pi/pip-packages.txt"
-cp -R "$HERE/patches"       "$WORK/prefix/etc/pocket-pi/patches"
+PATCHES="$WORK/prefix/etc/pocket-pi/patches"
+mkdir -p "$PATCHES/dashboard-files"
+cp "$HERE/patches/"*.sh "$HERE/patches/"*.js "$PATCHES/"
+# Ship runtime files only, never test dependencies installed by npm ci.
+cp "$HERE/patches/dashboard-files/"{install.mjs,routes.mjs,client.js,client.css} "$PATCHES/dashboard-files/"
 chmod +x "$WORK/prefix/etc/pocket-pi/postinstall.sh"
 chmod +x "$WORK/prefix/etc/pocket-pi/patches/"*.sh
 

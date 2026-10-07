@@ -255,6 +255,10 @@ if [ -f "$ETC/patches/node-pty-stub.js" ] && [ -d "$NODE_PTY_PKG" ]; then
   echo "==> node-pty stub installed; src/ removed so tsx uses lib/"
 fi
 
+# Shared browser UI + server routes (also used by the Android WebView).
+node "$ETC/patches/dashboard-files/install.mjs" "$DASH_DIR" || \
+  echo "WARN: dashboard file-transfer patch failed; see the error above"
+
 # --- 3b. Clean settings.json (no default provider preseed) ------------------
 # Earlier builds preseeded `defaultProvider=nvidia` so a fresh install could
 # chat immediately against free NVIDIA NIM. Pulled now: it bakes in an

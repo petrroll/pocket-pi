@@ -1,0 +1,12 @@
+{
+  "name": "pocket-pi-dashboard-files",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "fastify": "5.12.5",
+    "jsdom": "26.1.0"
+  }
+}

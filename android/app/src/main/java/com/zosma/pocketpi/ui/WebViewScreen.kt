@@ -7,6 +7,7 @@ import android.net.Uri
 import android.provider.Settings
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -33,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -73,7 +73,7 @@ fun WebViewScreen() {
     var phase by remember { mutableStateOf("Starting Pi…") }
     var logTail by remember { mutableStateOf("") }
     var attempt by remember { mutableStateOf(0) }
-    var filesOpen by rememberSaveable { mutableStateOf(false) }
+    val transfers = rememberWebFileTransfers(DASHBOARD_PORT)
 
     // Accessibility service polled every 2s. Re-evaluates the AccessibilityPane
     // visibility — the user may toggle it on in Settings while the app is open.
@@ -125,10 +125,9 @@ fun WebViewScreen() {
                     accessibilityDismissed = true
                 },
             )
-            else -> Web(info!!, onOpenFiles = { filesOpen = true })
+            else -> Web(info!!, transfers)
         }
     }
-    if (filesOpen) FileTransferDialog(onDismiss = { filesOpen = false })
 }
 
 private data class WebserverInfo(val port: Int)
@@ -344,11 +343,10 @@ private fun RecoveryActions() {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun Web(info: WebserverInfo, onOpenFiles: () -> Unit) {
+private fun Web(info: WebserverInfo, transfers: WebFileTransfers) {
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = { ctx ->
-            val folderFilesScript = ctx.assets.open("folder-files.js").bufferedReader().use { it.readText() }
             WebView(ctx).apply {
                 CookieManager.getInstance().setAcceptCookie(true)
                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
@@ -382,9 +380,6 @@ private fun Web(info: WebserverInfo, onOpenFiles: () -> Unit) {
                 // visualViewport changes so the input bar tracks the keyboard.
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
-                        if (url?.startsWith("http://127.0.0.1:${info.port}/") == true) {
-                            view?.evaluateJavascript(folderFilesScript, null)
-                        }
                         view?.evaluateJavascript(
                             """
                             (function(){
@@ -417,13 +412,26 @@ private fun Web(info: WebserverInfo, onOpenFiles: () -> Unit) {
                     }
                 }
                 webChromeClient = object : WebChromeClient() {
+                    override fun onShowFileChooser(
+                        view: WebView,
+                        callback: ValueCallback<Array<Uri>>,
+                        params: FileChooserParams,
+                    ): Boolean {
+                        if (!view.url.orEmpty().startsWith("http://127.0.0.1:${info.port}/")) {
+                            callback.onReceiveValue(null)
+                            return true
+                        }
+                        return transfers.chooseFiles(callback, params)
+                    }
+
                     override fun onConsoleMessage(msg: android.webkit.ConsoleMessage): Boolean {
                         android.util.Log.i("PiWebViewConsole",
                             "${msg.messageLevel()} [${msg.lineNumber()}] ${msg.message()}")
                         return true
                     }
                 }
-                addJavascriptInterface(NativeBridge(ctx, onOpenFiles), "PocketPi")
+                setDownloadListener(transfers.download)
+                addJavascriptInterface(NativeBridge(ctx), "PocketPi")
 
                 // Localhost is unguarded for pi-agent-dashboard; no auth POST.
                 loadUrl("http://127.0.0.1:${info.port}/")
@@ -432,13 +440,7 @@ private fun Web(info: WebserverInfo, onOpenFiles: () -> Unit) {
     )
 }
 
-private class NativeBridge(private val ctx: Context, private val onOpenFiles: () -> Unit) {
-    // This only opens a user-controlled dialog; no paths or file contents cross the bridge.
-    @JavascriptInterface
-    fun openFiles() {
-        android.os.Handler(android.os.Looper.getMainLooper()).post { onOpenFiles() }
-    }
-
+private class NativeBridge(private val ctx: Context) {
     @JavascriptInterface
     fun notify(title: String, body: String) {
         val n = NotificationCompat.Builder(ctx, com.zosma.pocketpi.PocketPiApp.NOTIF_CHANNEL_ID)

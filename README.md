@@ -23,18 +23,22 @@ If the dashboard never finishes binding, the loading screen surfaces **Restart P
 
 ## Upload and download files
 
-In the Folders view, tap **Files** beside the **Folder** button. The file browser
-starts in Pi's home directory (`~`); open a subfolder to use it as the destination.
+In the Folders view, tap **Files** beside the **Folder** button. This is shared web
+UI: it works in desktop/mobile browsers and in the Android app, without a native
+JavaScript bridge. Choose Pi home, a pinned folder, or a session's working directory
+from the folder selector, then navigate into subfolders.
 
-- **Upload** opens Android's document picker and copies the selected file into the
-  current folder. Existing files are never overwritten; a name conflict is shown
-  as an error.
-- Tap a file to **download** it, then choose where to save it in Android's save
-  dialog. Binary files are copied unchanged.
+- **Upload** uses the browser's file picker (Android's document picker inside the
+  app). Files up to **100 MiB** are streamed to the selected folder. Existing files
+  are never overwritten; a name conflict is shown as an error.
+- Tap a file to **download** it through your browser, or choose a save destination
+  in Android's save dialog. Binary files are copied unchanged.
 - **Up** navigates to the parent folder; **Refresh** reloads files created by Pi.
 
-Transfers need no storage permission. Browsing stays inside Pi's home directory;
-symlinks leading outside it are not shown. Folder downloads are not supported.
+Transfers use the dashboard's existing access controls. Paths and symlink targets
+must stay within the selected folder. No Android storage permission is needed.
+Folder archives are not supported. See [integration and testing](docs/file-transfers.md)
+for standalone web-dashboard installations.
 
 ## Providers — what works
 
@@ -105,8 +109,9 @@ cd ../../android && ./gradlew :app:assembleDebug
 # Output: android/app/build/outputs/apk/debug/app-debug.apk (~40 MB)
 ```
 
-File-transfer unit tests: `cd android && ./gradlew :app:testDebugUnitTest`.
-For device checks, see [the file-transfer checklist](android/FILE_TRANSFERS_TESTING.md).
+Shared file-transfer tests: `cd bootstrap/patches/dashboard-files && npm ci --ignore-scripts && npm test`.
+Android tests: `cd android && ./gradlew :app:testDebugUnitTest`.
+For browser/device checks, see [the file-transfer checklist](docs/file-transfers.md).
 
 The current build uses `applicationId = com.termux` so the upstream Termux bootstrap binaries (which bake in the path `/data/data/com.termux/files/usr`) work without recompiling. To ship under a real app id, run `bootstrap/rebuild-with-prefix.sh` (Docker, 4–12 h on Apple Silicon) to produce a bootstrap pinned to a custom prefix, then flip `applicationId` in `android/app/build.gradle.kts`.
 

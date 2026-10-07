@@ -5,6 +5,15 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val dashboardAssets = layout.buildDirectory.dir("generated/dashboard-assets")
+val copyDashboardFiles by tasks.registering(Copy::class) {
+    from("../../bootstrap/patches/dashboard-files") {
+        include("install.mjs", "routes.mjs", "client.js", "client.css")
+    }
+    into(dashboardAssets.map { it.dir("dashboard-files") })
+}
+tasks.named("preBuild") { dependsOn(copyDashboardFiles) }
+
 android {
     namespace = "com.zosma.pocketpi"
     compileSdk = 34
@@ -45,6 +54,7 @@ android {
     // Ship the bootstrap zip as a raw asset; PocketPiBootstrap unzips on first
     // run. The build script in bootstrap/build-bootstrap.sh produces this.
     sourceSets["main"].assets.srcDir("../../bootstrap/dist")
+    sourceSets["main"].assets.srcDir(dashboardAssets)
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

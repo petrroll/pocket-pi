@@ -2,6 +2,7 @@ package com.zosma.pocketpi.pi
 
 import android.content.Context
 import android.util.Log
+import java.io.File
 
 /**
  * Owns two long-lived child processes:
@@ -25,6 +26,15 @@ class PiBridge(private val ctx: Context) {
     fun start() {
         if (process?.isAlive == true) return
         val prefix = Bootstrapper.prefixDir(ctx)
+        // Refresh this small payload on APK upgrades without rerunning npm/bootstrap.
+        runCatching {
+            val patches = File(prefix, "etc/pocket-pi/patches/dashboard-files").apply { mkdirs() }
+            for (name in ctx.assets.list("dashboard-files").orEmpty()) {
+                ctx.assets.open("dashboard-files/$name").use { input ->
+                    File(patches, name).outputStream().use { input.copyTo(it) }
+                }
+            }
+        }.onFailure { Log.w(TAG, "Could not refresh dashboard file transfers", it) }
         // Bash wraps both children for two reasons: libtermux-exec needs to
         // intercept the `#!/usr/bin/env node` shebang, and pi --mode rpc
         // requires an attached stdin (sleep infinity keeps it open).
@@ -44,10 +54,11 @@ class PiBridge(private val ctx: Context) {
         // @earendil-works/pi-coding-agent (which ships jiti) isn't on disk.
         val launch = buildString {
             append("mkdir -p \$HOME/.pi/dashboard; ")
-            append("(")
-            append("pi-dashboard start ")
-            append(">>\$HOME/.pi/dashboard/dashboard.log 2>&1 &")
-            append(") ; ")
+            // Patch before either child starts: pi's extension can auto-start its own server.
+            append("node \"\$PREFIX/etc/pocket-pi/patches/dashboard-files/install.mjs\" ")
+            append("\"\$PREFIX/lib/node_modules/@blackbelt-technology/pi-agent-dashboard\" ")
+            append(">>\$HOME/.pi/dashboard/dashboard.log 2>&1; ")
+            append("(pi-dashboard start >>\$HOME/.pi/dashboard/dashboard.log 2>&1) & ")
             append("exec sleep infinity | exec pi --mode rpc")
         }
         val pb = ProcessBuilder(

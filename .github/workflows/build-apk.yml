@@ -33,6 +33,10 @@ jobs:
       - uses: pnpm/action-setup@v4
         with: { version: 9 }
 
+      - name: Test shared file transfers
+        working-directory: bootstrap/patches/dashboard-files
+        run: npm ci --ignore-scripts && npm test
+
       - name: Build TS extensions
         run: |
           cd extensions/pi-termux-tools && pnpm install && pnpm build && cd -
