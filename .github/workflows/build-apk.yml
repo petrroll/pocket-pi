@@ -51,9 +51,9 @@ jobs:
           chmod +x bootstrap/build-bootstrap.sh bootstrap/postinstall.sh bootstrap/patches/*.sh
           ./bootstrap/build-bootstrap.sh aarch64
 
-      - name: Build debug APK
+      - name: Test and build debug APK
         working-directory: android
-        run: ./gradlew --no-daemon assembleDebug
+        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug
 
       - name: Build release APK (unsigned)
         working-directory: android

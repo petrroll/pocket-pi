@@ -21,6 +21,21 @@ What Pocket Pi adds is the packaging: a Termux runtime, postinstall script, an A
 
 If the dashboard never finishes binding, the loading screen surfaces **Restart Pi** and **Re-run setup** buttons after a 15-second stall — those re-kick the service and re-run the bootstrap installer respectively. As a last resort, force-stop the app from Android Settings and reopen; the install state on disk is preserved.
 
+## Upload and download files
+
+In the Folders view, tap **Files** beside the **Folder** button. The file browser
+starts in Pi's home directory (`~`); open a subfolder to use it as the destination.
+
+- **Upload** opens Android's document picker and copies the selected file into the
+  current folder. Existing files are never overwritten; a name conflict is shown
+  as an error.
+- Tap a file to **download** it, then choose where to save it in Android's save
+  dialog. Binary files are copied unchanged.
+- **Up** navigates to the parent folder; **Refresh** reloads files created by Pi.
+
+Transfers need no storage permission. Browsing stays inside Pi's home directory;
+symlinks leading outside it are not shown. Folder downloads are not supported.
+
 ## Providers — what works
 
 The dashboard's Providers UI lists **two** sections: `SUBSCRIPTIONS (OAUTH)` and `API KEYS`. Not everything in the OAuth list works end-to-end on Pocket Pi today — the OAuth flow stores credentials, but actually *using* those credentials requires a Pi-side protocol bridge for each vendor. Only Anthropic's bridge is bundled.
@@ -89,6 +104,9 @@ cd ../pi-skill-learner       && pnpm install && pnpm build
 cd ../../android && ./gradlew :app:assembleDebug
 # Output: android/app/build/outputs/apk/debug/app-debug.apk (~40 MB)
 ```
+
+File-transfer unit tests: `cd android && ./gradlew :app:testDebugUnitTest`.
+For device checks, see [the file-transfer checklist](android/FILE_TRANSFERS_TESTING.md).
 
 The current build uses `applicationId = com.termux` so the upstream Termux bootstrap binaries (which bake in the path `/data/data/com.termux/files/usr`) work without recompiling. To ship under a real app id, run `bootstrap/rebuild-with-prefix.sh` (Docker, 4–12 h on Apple Silicon) to produce a bootstrap pinned to a custom prefix, then flip `applicationId` in `android/app/build.gradle.kts`.
 
